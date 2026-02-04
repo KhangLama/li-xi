@@ -1,11 +1,11 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Sparkles, AlertCircle, Share2, Camera, Trophy } from 'lucide-react';
-import { Denomination, LuckHistory } from './types';
-import { generateLixiDeck, formatCurrency } from './utils';
-import Envelope from './components/Envelope';
-import ResultModal from './components/ResultModal';
+import { Denomination, LuckHistory } from './types.ts';
+import { generateLixiDeck, formatCurrency } from './utils.ts';
+import Envelope from './components/Envelope.tsx';
+import ResultModal from './components/ResultModal.tsx';
 
 const App: React.FC = () => {
   const [deck, setDeck] = useState<Denomination[]>([]);
@@ -13,8 +13,8 @@ const App: React.FC = () => {
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
   const [isPermanentlyOpened, setIsPermanentlyOpened] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
+  const [showFlash, setShowFlash] = useState(false);
 
-  // Khởi tạo và kiểm tra trạng thái từ localStorage (Key riêng cho 2026)
   useEffect(() => {
     const savedOpenedStatus = localStorage.getItem('lixi_2026_opened');
     const savedWonAmount = localStorage.getItem('lixi_2026_amount');
@@ -36,11 +36,9 @@ const App: React.FC = () => {
     setWonAmount(result.value);
     setIsPermanentlyOpened(true);
 
-    // Lưu vĩnh viễn cho năm 2026
     localStorage.setItem('lixi_2026_opened', 'true');
     localStorage.setItem('lixi_2026_amount', result.value.toString());
     
-    // Lưu lịch sử đơn giản
     const historyItem: LuckHistory = {
       id: Date.now().toString(),
       amount: result.value,
@@ -50,14 +48,51 @@ const App: React.FC = () => {
     localStorage.setItem('lixi_2026_history', JSON.stringify([historyItem, ...savedHistory]));
   }, [openedId, isPermanentlyOpened, deck]);
 
+  const handleShare = async () => {
+    const shareText = `🧧 Tớ vừa bốc được ${formatCurrency(wonAmount || 0)} lộc may mắn năm Bính Ngọ 2026! Mã Đáo Thành Công! Thử vận may của bạn tại đây:`;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Lì Xì Bính Ngọ 2026',
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+      window.open(fbUrl, '_blank');
+    }
+  };
+
+  const handleSaveMemory = () => {
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 300);
+    setTimeout(() => {
+      alert("✨ Đã sẵn sàng! Hãy nhấn phím Chụp màn hình để lưu giữ khoảnh khắc lộc xuân này và khoe với bạn bè nhé! 📸");
+    }, 400);
+  };
+
   return (
     <div className="min-h-screen pb-24 bg-[#fffcf5] relative overflow-hidden">
-      {/* Ngựa phi ngang màn hình (Animation mobile-friendly) */}
+      <AnimatePresence>
+        {showFlash && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white z-[200] pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
       <div className="fixed top-12 left-0 w-full pointer-events-none z-0 opacity-10 select-none">
         <div className="text-6xl md:text-8xl animate-horse">🐎</div>
       </div>
 
-      {/* Trang trí nền - Ẩn bớt trên mobile cực nhỏ để tránh rối mắt */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-10 md:opacity-20">
         <div className="absolute top-4 left-4 text-4xl md:text-6xl">🏮</div>
         <div className="absolute top-4 right-4 text-4xl md:text-6xl">🏮</div>
@@ -104,7 +139,6 @@ const App: React.FC = () => {
               <span className="font-black uppercase text-base md:text-3xl tracking-tight">Chọn lộc duy nhất 1 lần</span>
             </div>
 
-            {/* Deck Area - Mobile 2 cột, Desktop 3 cột */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-12 max-w-5xl place-items-center">
               {deck.map((_, index) => (
                 <Envelope 
@@ -125,27 +159,27 @@ const App: React.FC = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center p-6 md:p-20 bg-white rounded-[2rem] md:rounded-[4rem] shadow-[0_20px_40px_-15px_rgba(185,28,28,0.3)] border-[8px] md:border-[15px] border-red-600 max-w-3xl w-full text-center relative"
+            className="flex flex-col items-center p-6 md:p-14 bg-white rounded-[2rem] md:rounded-[4rem] shadow-[0_20px_40px_-15px_rgba(185,28,28,0.3)] border-[8px] md:border-[15px] border-red-600 max-w-2xl w-full text-center relative"
           >
             <div className="absolute -top-10 md:-top-16 bg-yellow-400 border-4 md:border-8 border-red-600 p-4 md:p-6 rounded-full shadow-2xl">
               <span className="text-4xl md:text-6xl">🐎</span>
             </div>
 
-            <h2 className="text-3xl md:text-7xl font-festive text-red-600 mb-4 md:mb-6 mt-4 md:mt-6">Mã Đáo Thành Công!</h2>
-            <p className="text-gray-600 text-base md:text-2xl mb-8 md:mb-12 font-medium max-w-md mx-auto leading-relaxed">
+            <h2 className="text-3xl md:text-5xl font-festive text-red-600 mb-4 md:mb-6 mt-4 md:mt-6">Mã Đáo Thành Công!</h2>
+            <p className="text-gray-600 text-base md:text-xl mb-8 md:mb-12 font-medium max-w-md mx-auto leading-relaxed">
               Bạn đã nhận lộc may mắn đầu năm Bính Ngọ. Chúc bạn một năm mới vạn sự hanh thông!
             </p>
             
-            <div className="w-full bg-yellow-50 p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] border-2 md:border-4 border-yellow-200 flex flex-col items-center shadow-inner mb-8 md:mb-12 relative overflow-hidden">
+            <div className="w-full bg-yellow-50 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 md:border-4 border-yellow-200 flex flex-col items-center shadow-inner mb-8 md:mb-12 relative overflow-hidden">
               <span className="text-gray-400 text-[10px] md:text-sm uppercase font-black tracking-[0.2em] md:tracking-[0.4em] mb-2 md:mb-4 relative z-10">Lộc Xuân 2026</span>
               <motion.span 
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
-                className="text-3xl md:text-8xl font-black text-red-600 drop-shadow-xl relative z-10 whitespace-nowrap"
+                className="text-4xl md:text-7xl font-black text-red-600 drop-shadow-xl relative z-10 whitespace-nowrap"
               >
                 {wonAmount ? formatCurrency(wonAmount) : "---"}
               </motion.span>
-              <div className="mt-4 md:mt-8 flex gap-3 relative z-10">
+              <div className="mt-4 md:mt-6 flex gap-3 relative z-10">
                 <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-spin-slow" />
                 <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-pulse" />
               </div>
@@ -153,16 +187,16 @@ const App: React.FC = () => {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full">
               <button 
-                onClick={() => alert("Hãy chụp màn hình để lưu giữ lộc may mắn này nhé! 📸")}
-                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_4px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-lg md:text-2xl"
+                onClick={handleSaveMemory}
+                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_4px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-lg md:text-xl"
               >
                 <Camera className="w-6 h-6 md:w-8 md:h-8" />
                 Lưu Kỷ Niệm
               </button>
               
               <button 
-                onClick={() => alert("Chúc mừng năm mới Bính Ngọ! Hãy gửi link cho người thân để cùng nhận lộc nhé.")}
-                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-lg border-2 md:border-4 border-gray-100 active:scale-95 text-lg md:text-2xl"
+                onClick={handleShare}
+                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-lg border-2 md:border-4 border-gray-100 active:scale-95 text-lg md:text-xl"
               >
                 <Share2 className="w-6 h-6 md:w-8 md:h-8" />
                 Khoe Với Bạn
