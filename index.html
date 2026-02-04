@@ -24,9 +24,13 @@
       .animate-horse {
         animation: horse-run 15s linear infinite;
       }
-      /* Đảm bảo root chiếm toàn bộ chiều cao */
       #root {
         min-height: 100vh;
+      }
+      .share-capture-area {
+        background: #fffcf5;
+        padding: 40px;
+        border-radius: 40px;
       }
     </style>
     <script type="importmap">
@@ -38,6 +42,7 @@
     "framer-motion": "https://esm.sh/framer-motion@12.31.0",
     "canvas-confetti": "https://esm.sh/canvas-confetti@1.9.4",
     "lucide-react": "https://esm.sh/lucide-react@0.463.0?external=react",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/"
   }
@@ -46,7 +51,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Thêm dòng này để trình duyệt biết bắt đầu từ đâu -->
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>

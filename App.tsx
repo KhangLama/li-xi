@@ -1,7 +1,8 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, AlertCircle, Share2, Trophy } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, AlertCircle, Share2, Trophy, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { Denomination, LuckHistory } from './types.ts';
 import { generateLixiDeck, formatCurrency } from './utils.ts';
 import Envelope from './components/Envelope.tsx';
@@ -13,6 +14,9 @@ const App: React.FC = () => {
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
   const [isPermanentlyOpened, setIsPermanentlyOpened] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedOpenedStatus = localStorage.getItem('lixi_2026_opened');
@@ -48,27 +52,51 @@ const App: React.FC = () => {
   }, [openedId, isPermanentlyOpened, deck]);
 
   const handleShare = async () => {
-    const shareText = `🧧 Tớ vừa bốc được ${formatCurrency(wonAmount || 0)} lộc may mắn năm Bính Ngọ 2026! Mã Đáo Thành Công! Thử vận may của bạn tại đây:`;
-    const shareUrl = window.location.href;
+    if (!cardRef.current || isSharing) return;
+    
+    setIsSharing(true);
+    try {
+      // Tối ưu hóa việc chụp ảnh
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2, // Tăng chất lượng ảnh
+        backgroundColor: '#fffcf5',
+        useCORS: true,
+        logging: false,
+      });
 
-    if (navigator.share) {
-      try {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Không thể tạo ảnh');
+
+      const file = new File([blob], 'lixi-2026.png', { type: 'image/png' });
+      const shareText = `🧧 Tớ vừa bốc được ${formatCurrency(wonAmount || 0)} lộc may mắn năm Bính Ngọ 2026! Mã Đáo Thành Công!`;
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
+          files: [file],
           title: 'Lì Xì Bính Ngọ 2026',
           text: shareText,
-          url: shareUrl,
         });
-      } catch (err) {
-        console.log('Error sharing:', err);
+      } else {
+        // Fallback: Tải ảnh xuống và báo người dùng chia sẻ thủ công
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lixi-2026-${wonAmount}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        alert("Thiết bị chưa hỗ trợ chia sẻ ảnh trực tiếp. Ảnh lộc đã được lưu vào máy, bạn hãy đăng nó lên Facebook nhé! 🧧");
       }
-    } else {
-      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
-      window.open(fbUrl, '_blank');
+    } catch (err) {
+      console.error('Lỗi chia sẻ:', err);
+      alert("Có lỗi xảy ra khi tạo ảnh chia sẻ. Thử lại sau nhé!");
+    } finally {
+      setIsSharing(false);
     }
   };
 
   return (
     <div className="min-h-screen pb-24 bg-[#fffcf5] relative overflow-hidden">
+      {/* Background elements */}
       <div className="fixed top-12 left-0 w-full pointer-events-none z-0 opacity-10 select-none">
         <div className="text-6xl md:text-8xl animate-horse">🐎</div>
       </div>
@@ -136,46 +164,64 @@ const App: React.FC = () => {
             </p>
           </motion.div>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center p-6 md:p-14 bg-white rounded-[2rem] md:rounded-[4rem] shadow-[0_20px_40px_-15px_rgba(185,28,28,0.3)] border-[8px] md:border-[15px] border-red-600 max-w-2xl w-full text-center relative"
-          >
-            <div className="absolute -top-10 md:-top-16 bg-yellow-400 border-4 md:border-8 border-red-600 p-4 md:p-6 rounded-full shadow-2xl">
-              <span className="text-4xl md:text-6xl">🐎</span>
-            </div>
-
-            <h2 className="text-3xl md:text-5xl font-festive text-red-600 mb-4 md:mb-6 mt-4 md:mt-6">Mã Đáo Thành Công!</h2>
-            <p className="text-gray-600 text-base md:text-xl mb-8 md:mb-12 font-medium max-w-md mx-auto leading-relaxed">
-              Bạn đã nhận lộc may mắn đầu năm Bính Ngọ. Chúc bạn một năm mới vạn sự hanh thông!
-            </p>
-            
-            <div className="w-full bg-yellow-50 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 md:border-4 border-yellow-200 flex flex-col items-center shadow-inner mb-8 md:mb-12 relative overflow-hidden">
-              <span className="text-gray-400 text-[10px] md:text-sm uppercase font-black tracking-[0.2em] md:tracking-[0.4em] mb-2 md:mb-4 relative z-10">Lộc Xuân 2026</span>
-              <motion.span 
-                initial={{ scale: 0.5 }}
-                animate={{ scale: 1 }}
-                className="text-4xl md:text-7xl font-black text-red-600 drop-shadow-xl relative z-10 whitespace-nowrap"
-              >
-                {wonAmount ? formatCurrency(wonAmount) : "---"}
-              </motion.span>
-              <div className="mt-4 md:mt-6 flex gap-3 relative z-10">
-                <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-spin-slow" />
-                <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-pulse" />
+          <div className="flex flex-col items-center max-w-2xl w-full">
+            {/* Vùng này sẽ được html2canvas chụp lại */}
+            <motion.div 
+              ref={cardRef}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center p-6 md:p-14 bg-white rounded-[2rem] md:rounded-[4rem] shadow-[0_20px_40px_-15px_rgba(185,28,28,0.3)] border-[8px] md:border-[15px] border-red-600 w-full text-center relative"
+            >
+              <div className="absolute -top-10 md:-top-16 bg-yellow-400 border-4 md:border-8 border-red-600 p-4 md:p-6 rounded-full shadow-2xl">
+                <span className="text-4xl md:text-6xl">🐎</span>
               </div>
-            </div>
+
+              <h2 className="text-3xl md:text-5xl font-festive text-red-600 mb-4 md:mb-6 mt-4 md:mt-6">Mã Đáo Thành Công!</h2>
+              <p className="text-gray-600 text-base md:text-xl mb-8 md:mb-12 font-medium max-w-md mx-auto leading-relaxed">
+                Bạn đã nhận lộc may mắn đầu năm Bính Ngọ. Chúc bạn một năm mới vạn sự hanh thông!
+              </p>
+              
+              <div className="w-full bg-yellow-50 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 md:border-4 border-yellow-200 flex flex-col items-center shadow-inner mb-4 relative overflow-hidden">
+                <span className="text-gray-400 text-[10px] md:text-sm uppercase font-black tracking-[0.2em] md:tracking-[0.4em] mb-2 md:mb-4 relative z-10">Lộc Xuân 2026</span>
+                <motion.span 
+                  initial={{ scale: 0.5 }}
+                  animate={{ scale: 1 }}
+                  className="text-4xl md:text-7xl font-black text-red-600 drop-shadow-xl relative z-10 whitespace-nowrap"
+                >
+                  {wonAmount ? formatCurrency(wonAmount) : "---"}
+                </motion.span>
+                <div className="mt-4 md:mt-6 flex gap-3 relative z-10">
+                  <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-spin-slow" />
+                  <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-pulse" />
+                </div>
+              </div>
+              
+              <p className="text-red-700/50 font-bold text-[10px] md:text-xs tracking-widest uppercase mb-4">🧧 lixibinhngo.vercel.app 🧧</p>
+            </motion.div>
             
-            <div className="w-full">
+            <div className="w-full mt-8">
               <button 
                 onClick={handleShare}
-                className="w-full flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-5 md:py-7 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_6px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-xl md:text-2xl uppercase tracking-wider"
+                disabled={isSharing}
+                className="w-full flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-5 md:py-7 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_6px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-xl md:text-2xl uppercase tracking-wider disabled:opacity-70"
               >
-                <Share2 className="w-7 h-7 md:w-9 md:h-9" />
-                Khoe Lộc Với Bạn Bè
+                {isSharing ? (
+                  <>
+                    <Loader2 className="w-7 h-7 md:w-9 md:h-9 animate-spin" />
+                    Đang chuẩn bị ảnh...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-7 h-7 md:w-9 md:h-9" />
+                    Khoe Lộc Ảnh Với Bạn Bè
+                  </>
+                )}
               </button>
-              <p className="mt-4 text-gray-400 text-xs font-bold italic text-center">Nhấn để chia sẻ niềm vui đầu năm!</p>
+              <p className="mt-4 text-gray-400 text-xs font-bold italic text-center">
+                {isSharing ? "Hệ thống đang chụp lại khoảnh khắc may mắn của bạn..." : "Nhấn để chia sẻ ảnh kết quả lên Facebook, Zalo!"}
+              </p>
             </div>
-          </motion.div>
+          </div>
         )}
       </main>
 
