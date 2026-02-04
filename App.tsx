@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, Sparkles, AlertCircle, Share2, Camera, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sparkles, AlertCircle, Share2, Trophy } from 'lucide-react';
 import { Denomination, LuckHistory } from './types.ts';
 import { generateLixiDeck, formatCurrency } from './utils.ts';
 import Envelope from './components/Envelope.tsx';
@@ -13,7 +13,6 @@ const App: React.FC = () => {
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
   const [isPermanentlyOpened, setIsPermanentlyOpened] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
-  const [showFlash, setShowFlash] = useState(false);
 
   useEffect(() => {
     const savedOpenedStatus = localStorage.getItem('lixi_2026_opened');
@@ -68,27 +67,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveMemory = () => {
-    setShowFlash(true);
-    setTimeout(() => setShowFlash(false), 300);
-    setTimeout(() => {
-      alert("✨ Đã sẵn sàng! Hãy nhấn phím Chụp màn hình để lưu giữ khoảnh khắc lộc xuân này và khoe với bạn bè nhé! 📸");
-    }, 400);
-  };
-
   return (
     <div className="min-h-screen pb-24 bg-[#fffcf5] relative overflow-hidden">
-      <AnimatePresence>
-        {showFlash && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white z-[200] pointer-events-none"
-          />
-        )}
-      </AnimatePresence>
-
       <div className="fixed top-12 left-0 w-full pointer-events-none z-0 opacity-10 select-none">
         <div className="text-6xl md:text-8xl animate-horse">🐎</div>
       </div>
@@ -185,22 +165,15 @@ const App: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full">
-              <button 
-                onClick={handleSaveMemory}
-                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_4px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-lg md:text-xl"
-              >
-                <Camera className="w-6 h-6 md:w-8 md:h-8" />
-                Lưu Kỷ Niệm
-              </button>
-              
+            <div className="w-full">
               <button 
                 onClick={handleShare}
-                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-lg border-2 md:border-4 border-gray-100 active:scale-95 text-lg md:text-xl"
+                className="w-full flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-5 md:py-7 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_6px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-xl md:text-2xl uppercase tracking-wider"
               >
-                <Share2 className="w-6 h-6 md:w-8 md:h-8" />
-                Khoe Với Bạn
+                <Share2 className="w-7 h-7 md:w-9 md:h-9" />
+                Khoe Lộc Với Bạn Bè
               </button>
+              <p className="mt-4 text-gray-400 text-xs font-bold italic text-center">Nhấn để chia sẻ niềm vui đầu năm!</p>
             </div>
           </motion.div>
         )}
