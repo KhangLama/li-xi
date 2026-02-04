@@ -5,6 +5,7 @@ import { Sparkles, AlertCircle, Share2, Trophy, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { Denomination, LuckHistory } from './types.ts';
 import { generateLixiDeck, formatCurrency } from './utils.ts';
+import { DENOMINATIONS } from './constants.ts';
 import Envelope from './components/Envelope.tsx';
 import ResultModal from './components/ResultModal.tsx';
 
@@ -29,6 +30,9 @@ const App: React.FC = () => {
       setDeck(generateLixiDeck());
     }
   }, []);
+
+  // Tìm hình ảnh tờ tiền dựa trên số tiền đã trúng
+  const wonDenomination = wonAmount ? DENOMINATIONS.find(d => d.value === wonAmount) : null;
 
   const handleOpenEnvelope = useCallback((index: number) => {
     if (isPermanentlyOpened || openedId !== null) return;
@@ -57,14 +61,14 @@ const App: React.FC = () => {
     setIsSharing(true);
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+        scale: 3, // Tăng scale để ảnh nét hơn khi chia sẻ
         backgroundColor: '#fffcf5',
         useCORS: true,
         logging: false,
         allowTaint: true
       });
 
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 0.9));
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
       if (!blob) throw new Error('Không thể tạo ảnh');
 
       const file = new File([blob], `lixi-2026-${wonAmount}.png`, { type: 'image/png' });
@@ -80,12 +84,10 @@ const App: React.FC = () => {
         throw new Error('Trình duyệt không hỗ trợ chia sẻ tệp trực tiếp');
       }
     } catch (err: any) {
-      // Nếu là lỗi hủy bỏ (người dùng đóng dialog chia sẻ) thì không hiện alert
       if (err.name === 'AbortError') {
         console.log('Người dùng đã hủy chia sẻ');
       } else {
         console.error('Lỗi chia sẻ:', err);
-        // Fallback: Tải ảnh xuống
         if (cardRef.current) {
             try {
                 const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true });
@@ -172,7 +174,7 @@ const App: React.FC = () => {
               ref={cardRef}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center p-8 md:p-12 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_25px_60px_-15px_rgba(185,28,28,0.4)] border-[8px] border-red-600 w-full text-center relative overflow-hidden"
+              className="flex flex-col items-center p-6 md:p-10 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_25px_60px_-15px_rgba(185,28,28,0.4)] border-[8px] border-red-600 w-full text-center relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-4 opacity-5 text-4xl">🏮</div>
               <div className="absolute bottom-0 left-0 p-4 opacity-5 text-4xl">🏮</div>
@@ -181,28 +183,44 @@ const App: React.FC = () => {
                 <span className="text-3xl">🐎</span>
               </div>
 
-              <h2 className="text-3xl md:text-4xl font-festive text-red-600 mb-2 mt-2">Mã Đáo Thành Công!</h2>
-              <p className="text-gray-500 text-xs md:text-sm mb-6 font-semibold uppercase tracking-widest">Lộc Xuân Bính Ngọ 2026</p>
+              <h2 className="text-2xl md:text-3xl font-festive text-red-600 mb-1 mt-2">Mã Đáo Thành Công!</h2>
+              <p className="text-gray-500 text-[10px] md:text-xs mb-4 font-semibold uppercase tracking-widest">Lộc Xuân Bính Ngọ 2026</p>
               
-              <div className="w-full bg-yellow-50 p-6 md:p-10 rounded-[2rem] border-2 border-yellow-200 flex flex-col items-center shadow-inner mb-6 relative group">
+              {/* Banknote Image Display in Result Card */}
+              {wonDenomination && (
+                <div className="relative w-full mb-6 px-4">
+                  <div className="absolute inset-0 bg-black/5 blur-xl rounded-full scale-90"></div>
+                  <motion.img 
+                    initial={{ rotate: -2, y: 10, opacity: 0 }}
+                    animate={{ rotate: 1, y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    src={wonDenomination.imageUrl} 
+                    alt="Tiền lộc"
+                    crossOrigin="anonymous"
+                    className="relative w-full h-auto rounded-lg shadow-2xl border-4 border-white/80 z-10 transform hover:rotate-0 transition-transform duration-500"
+                  />
+                </div>
+              )}
+
+              <div className="w-full bg-yellow-50 p-4 md:p-6 rounded-[2rem] border-2 border-yellow-200 flex flex-col items-center shadow-inner mb-4 relative group">
                 <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <motion.span 
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
-                  className="text-4xl md:text-6xl font-black text-red-600 drop-shadow-lg z-10"
+                  className="text-3xl md:text-5xl font-black text-red-600 drop-shadow-lg z-10"
                 >
                   {wonAmount ? formatCurrency(wonAmount) : "---"}
                 </motion.span>
-                <div className="mt-4 flex gap-2 z-10">
-                  <Sparkles className="text-yellow-500 w-5 h-5 animate-spin-slow" />
-                  <Sparkles className="text-yellow-500 w-5 h-5 animate-pulse" />
+                <div className="mt-2 flex gap-2 z-10">
+                  <Sparkles className="text-yellow-500 w-4 h-4 animate-spin-slow" />
+                  <Sparkles className="text-yellow-500 w-4 h-4 animate-pulse" />
                 </div>
               </div>
               
-              <p className="text-gray-400 text-[10px] font-black tracking-widest uppercase italic">🧧 Tấn Tài Tấn Lộc 🧧</p>
+              <p className="text-gray-400 text-[8px] md:text-[10px] font-black tracking-widest uppercase italic">🧧 Tấn Tài Tấn Lộc 🧧</p>
             </motion.div>
             
-            <div className="w-full mt-8 flex flex-col items-center gap-4">
+            <div className="w-full mt-6 flex flex-col items-center gap-4">
               <button 
                 onClick={handleShare}
                 disabled={isSharing}
@@ -220,7 +238,7 @@ const App: React.FC = () => {
                   </>
                 )}
               </button>
-              <p className="text-gray-400 text-[10px] font-bold italic text-center px-4">
+              <p className="text-gray-400 text-[10px] font-bold italic text-center px-4 leading-relaxed">
                 {isSharing ? "Chúng tôi đang chụp lại kết quả may mắn của bạn." : "Nhấn để tạo ảnh và chia sẻ niềm vui xuân mới!"}
               </p>
             </div>
