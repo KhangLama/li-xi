@@ -1,40 +1,28 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { History, Coins, Gift, Sparkles, AlertCircle, Share2, Camera } from 'lucide-react';
+import { Gift, Sparkles, AlertCircle, Share2, Camera, Trophy } from 'lucide-react';
 import { Denomination, LuckHistory } from './types';
 import { generateLixiDeck, formatCurrency } from './utils';
 import Envelope from './components/Envelope';
 import ResultModal from './components/ResultModal';
 
 const App: React.FC = () => {
-  // Trạng thái bộ bài hiện tại (chỉ tạo 1 lần nếu chưa bốc)
   const [deck, setDeck] = useState<Denomination[]>([]);
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
-  const [history, setHistory] = useState<LuckHistory[]>([]);
   const [isPermanentlyOpened, setIsPermanentlyOpened] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
 
-  // Khởi tạo và kiểm tra trạng thái từ localStorage
+  // Khởi tạo và kiểm tra trạng thái từ localStorage (Key riêng cho 2026)
   useEffect(() => {
-    const savedHistory = localStorage.getItem('tet_lixi_history');
-    const savedOpenedStatus = localStorage.getItem('tet_lixi_opened_status');
-    const savedWonAmount = localStorage.getItem('tet_lixi_won_amount');
+    const savedOpenedStatus = localStorage.getItem('lixi_2026_opened');
+    const savedWonAmount = localStorage.getItem('lixi_2026_amount');
     
-    if (savedHistory) {
-      try {
-        setHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error("Failed to parse history", e);
-      }
-    }
-
     if (savedOpenedStatus === 'true') {
       setIsPermanentlyOpened(true);
       if (savedWonAmount) setWonAmount(Number(savedWonAmount));
     } else {
-      // Nếu chưa bốc, tạo bộ bài mới
       setDeck(generateLixiDeck());
     }
   }, []);
@@ -48,64 +36,76 @@ const App: React.FC = () => {
     setWonAmount(result.value);
     setIsPermanentlyOpened(true);
 
-    const newHistoryItem: LuckHistory = {
-      id: Math.random().toString(36).substr(2, 9),
+    // Lưu vĩnh viễn cho năm 2026
+    localStorage.setItem('lixi_2026_opened', 'true');
+    localStorage.setItem('lixi_2026_amount', result.value.toString());
+    
+    // Lưu lịch sử đơn giản
+    const historyItem: LuckHistory = {
+      id: Date.now().toString(),
       amount: result.value,
       timestamp: Date.now()
     };
-
-    // Lưu vào lịch sử và khóa trạng thái
-    const newHistory = [newHistoryItem, ...history];
-    localStorage.setItem('tet_lixi_history', JSON.stringify(newHistory));
-    localStorage.setItem('tet_lixi_opened_status', 'true');
-    localStorage.setItem('tet_lixi_won_amount', result.value.toString());
-    setHistory(newHistory);
-  }, [openedId, history, isPermanentlyOpened, deck]);
+    const savedHistory = JSON.parse(localStorage.getItem('lixi_2026_history') || '[]');
+    localStorage.setItem('lixi_2026_history', JSON.stringify([historyItem, ...savedHistory]));
+  }, [openedId, isPermanentlyOpened, deck]);
 
   return (
-    <div className="min-h-screen pb-20 bg-[#fff5f5] relative overflow-hidden selection:bg-red-200">
-      {/* Cành đào trang trí nền */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 opacity-20">
-        <div className="absolute top-10 left-10 text-6xl animate-pulse">🏮</div>
-        <div className="absolute bottom-20 right-10 text-6xl animate-pulse delay-700">🏮</div>
-        <div className="absolute top-1/4 right-10 text-4xl animate-bounce">🌸</div>
-        <div className="absolute bottom-1/4 left-10 text-5xl animate-bounce delay-300">🍑</div>
+    <div className="min-h-screen pb-24 bg-[#fffcf5] relative overflow-hidden">
+      {/* Ngựa phi ngang màn hình (Animation mobile-friendly) */}
+      <div className="fixed top-12 left-0 w-full pointer-events-none z-0 opacity-10 select-none">
+        <div className="text-6xl md:text-8xl animate-horse">🐎</div>
       </div>
 
-      <header className="bg-red-600 text-yellow-400 py-16 px-4 shadow-2xl text-center relative z-10 border-b-8 border-yellow-500">
+      {/* Trang trí nền - Ẩn bớt trên mobile cực nhỏ để tránh rối mắt */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-10 md:opacity-20">
+        <div className="absolute top-4 left-4 text-4xl md:text-6xl">🏮</div>
+        <div className="absolute top-4 right-4 text-4xl md:text-6xl">🏮</div>
+        <div className="absolute bottom-24 left-4 text-4xl md:text-6xl">🧨</div>
+        <div className="absolute bottom-24 right-4 text-4xl md:text-6xl">🧨</div>
+      </div>
+
+      <header className="bg-red-700 text-yellow-400 py-10 md:py-20 px-4 shadow-2xl text-center relative z-10 border-b-[6px] md:border-b-[10px] border-yellow-500">
         <div className="container mx-auto">
-          <motion.h1 
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="text-6xl md:text-9xl font-festive mb-4 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="inline-block mb-3 p-3 md:p-4 border-2 md:border-4 border-yellow-400 rounded-full bg-red-800"
           >
-            Lì Xì Tết 2025
+            <Trophy className="w-8 h-8 md:w-16 md:h-16" />
+          </motion.div>
+          <motion.h1 
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-4xl sm:text-6xl md:text-9xl font-festive mb-2 md:mb-4 drop-shadow-[0_4px_4px_rgba(0,0,0,0.4)]"
+          >
+            Lì Xì Bính Ngọ
           </motion.h1>
-          <motion.p 
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-xl md:text-3xl font-black tracking-[0.3em] uppercase opacity-95 drop-shadow-sm"
+            className="inline-block bg-yellow-400 text-red-800 px-4 md:px-6 py-1 rounded-full font-black text-sm md:text-2xl uppercase tracking-[0.1em] md:tracking-[0.2em] shadow-lg"
           >
-            {isPermanentlyOpened ? "Lộc Xuân Của Bạn" : "Một Lần Duy Nhất - Vạn Sự Như Ý"}
-          </motion.p>
+            Xuân 2026
+          </motion.div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 mt-12 relative z-10 flex flex-col items-center">
+      <main className="container mx-auto px-4 mt-8 md:mt-12 relative z-10 flex flex-col items-center">
         {!isPermanentlyOpened ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center"
+            className="flex flex-col items-center w-full"
           >
-            <div className="mb-12 flex items-center gap-4 text-red-700 bg-yellow-400 px-8 py-4 rounded-full border-4 border-red-600 shadow-xl animate-bounce">
-              <AlertCircle className="w-8 h-8" />
-              <span className="font-black uppercase text-xl md:text-2xl">Hãy chọn 1 bao lì xì may mắn!</span>
+            <div className="mb-8 md:mb-12 flex items-center gap-3 md:gap-4 text-white bg-red-600 px-6 md:px-10 py-3 md:py-5 rounded-2xl md:rounded-3xl border-2 md:border-4 border-yellow-400 shadow-[0_6px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all text-center">
+              <AlertCircle className="w-5 h-5 md:w-8 md:h-8 text-yellow-400 shrink-0" />
+              <span className="font-black uppercase text-base md:text-3xl tracking-tight">Chọn lộc duy nhất 1 lần</span>
             </div>
 
-            {/* Deck Area */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-12 max-w-4xl">
+            {/* Deck Area - Mobile 2 cột, Desktop 3 cột */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-12 max-w-5xl place-items-center">
               {deck.map((_, index) => (
                 <Envelope 
                   key={index} 
@@ -116,68 +116,66 @@ const App: React.FC = () => {
                 />
               ))}
             </div>
+            
+            <p className="mt-8 md:mt-12 text-red-800 font-bold italic text-sm md:text-base animate-pulse text-center px-4">
+              * Ghi chú: 1 triệu và 500k cực hiếm, chỉ xuất hiện 1 lần trong bộ 9 bao!
+            </p>
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center p-10 md:p-16 bg-white rounded-[4rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border-[12px] border-red-600 max-w-2xl w-full text-center relative"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center p-6 md:p-20 bg-white rounded-[2rem] md:rounded-[4rem] shadow-[0_20px_40px_-15px_rgba(185,28,28,0.3)] border-[8px] md:border-[15px] border-red-600 max-w-3xl w-full text-center relative"
           >
-            <div className="absolute -top-12 bg-yellow-400 border-4 border-red-600 p-4 rounded-full shadow-lg">
-              <Gift className="w-12 h-12 text-red-600" />
+            <div className="absolute -top-10 md:-top-16 bg-yellow-400 border-4 md:border-8 border-red-600 p-4 md:p-6 rounded-full shadow-2xl">
+              <span className="text-4xl md:text-6xl">🐎</span>
             </div>
 
-            <h2 className="text-4xl md:text-5xl font-black text-red-600 mb-4 mt-4">Chúc Mừng Năm Mới!</h2>
-            <p className="text-gray-500 text-lg md:text-xl mb-10 italic max-w-md mx-auto">
-              Bạn đã nhận được lộc xuân đầu năm. Chúc bạn một năm mới bình an, hạnh phúc và phát tài!
+            <h2 className="text-3xl md:text-7xl font-festive text-red-600 mb-4 md:mb-6 mt-4 md:mt-6">Mã Đáo Thành Công!</h2>
+            <p className="text-gray-600 text-base md:text-2xl mb-8 md:mb-12 font-medium max-w-md mx-auto leading-relaxed">
+              Bạn đã nhận lộc may mắn đầu năm Bính Ngọ. Chúc bạn một năm mới vạn sự hanh thông!
             </p>
             
-            <div className="w-full bg-red-50 p-10 rounded-[3rem] border-4 border-red-100 flex flex-col items-center shadow-inner mb-10">
-              <span className="text-gray-400 text-sm uppercase font-black tracking-[0.2em] mb-4">Mệnh giá lộc của bạn</span>
+            <div className="w-full bg-yellow-50 p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] border-2 md:border-4 border-yellow-200 flex flex-col items-center shadow-inner mb-8 md:mb-12 relative overflow-hidden">
+              <span className="text-gray-400 text-[10px] md:text-sm uppercase font-black tracking-[0.2em] md:tracking-[0.4em] mb-2 md:mb-4 relative z-10">Lộc Xuân 2026</span>
               <motion.span 
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
-                className="text-5xl md:text-7xl font-black text-red-600 drop-shadow-sm"
+                className="text-3xl md:text-8xl font-black text-red-600 drop-shadow-xl relative z-10 whitespace-nowrap"
               >
                 {wonAmount ? formatCurrency(wonAmount) : "---"}
               </motion.span>
-              <div className="mt-6 flex gap-2">
-                <Sparkles className="text-yellow-500 w-6 h-6 animate-spin-slow" />
-                <Sparkles className="text-yellow-500 w-6 h-6 animate-pulse" />
-                <Sparkles className="text-yellow-500 w-6 h-6 animate-bounce" />
+              <div className="mt-4 md:mt-8 flex gap-3 relative z-10">
+                <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-spin-slow" />
+                <Sparkles className="text-yellow-500 w-5 h-5 md:w-8 md:h-8 animate-pulse" />
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full">
               <button 
-                onClick={() => alert("Chụp màn hình lại để khoe lộc với mọi người nhé! 📸")}
-                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-5 rounded-3xl transition-all shadow-xl active:scale-95 text-xl"
+                onClick={() => alert("Hãy chụp màn hình để lưu giữ lộc may mắn này nhé! 📸")}
+                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-yellow-400 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-[0_4px_0_0_#b91c1c] active:translate-y-1 active:shadow-none text-lg md:text-2xl"
               >
-                <Camera className="w-6 h-6" />
-                Lưu làm kỷ niệm
+                <Camera className="w-6 h-6 md:w-8 md:h-8" />
+                Lưu Kỷ Niệm
               </button>
               
               <button 
-                onClick={() => alert("Chúc mừng năm mới 2025! App được thiết kế để mỗi người chỉ bốc 1 lần duy nhất.")}
-                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-black py-5 rounded-3xl transition-all shadow-lg border-2 border-gray-100 active:scale-95 text-xl"
+                onClick={() => alert("Chúc mừng năm mới Bính Ngọ! Hãy gửi link cho người thân để cùng nhận lộc nhé.")}
+                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] transition-all shadow-lg border-2 md:border-4 border-gray-100 active:scale-95 text-lg md:text-2xl"
               >
-                <Share2 className="w-6 h-6" />
-                Gửi lời chúc
+                <Share2 className="w-6 h-6 md:w-8 md:h-8" />
+                Khoe Với Bạn
               </button>
             </div>
-
-            <p className="mt-8 text-xs text-gray-400 uppercase font-bold tracking-widest opacity-50">
-              Mỗi trình duyệt chỉ được tham gia 1 lần duy nhất
-            </p>
           </motion.div>
         )}
       </main>
 
-      {/* Kết quả hiện ra ngay khi vừa bấm */}
       <ResultModal result={currentResult} onClose={() => setCurrentResult(null)} />
 
-      <footer className="fixed bottom-0 left-0 w-full bg-red-600/90 backdrop-blur-md border-t-4 border-yellow-500 py-4 text-center text-yellow-400 font-black text-sm md:text-base z-40 shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
-        🧧 XUÂN ẤT TỴ 2025 - AN KHANG THỊNH VƯỢNG 🧧
+      <footer className="fixed bottom-0 left-0 w-full bg-red-700/95 backdrop-blur-sm border-t-4 md:border-t-8 border-yellow-500 py-3 md:py-6 text-center text-yellow-400 font-black text-sm md:text-xl z-40 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+        🧧 XUÂN BÍNH NGỌ 2026 - VẠN SỰ NHƯ Ý 🧧
       </footer>
     </div>
   );
