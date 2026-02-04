@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, AlertCircle, Share2, Trophy, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -9,7 +9,7 @@ import { DENOMINATIONS } from './constants.ts';
 import Envelope from './components/Envelope.tsx';
 import ResultModal from './components/ResultModal.tsx';
 
-const App: React.FC = () => {
+const App = () => {
   const [deck, setDeck] = useState<Denomination[]>([]);
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
@@ -31,7 +31,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Tìm hình ảnh tờ tiền dựa trên số tiền đã trúng
   const wonDenomination = wonAmount ? DENOMINATIONS.find(d => d.value === wonAmount) : null;
 
   const handleOpenEnvelope = useCallback((index: number) => {
@@ -61,11 +60,12 @@ const App: React.FC = () => {
     setIsSharing(true);
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 3, // Tăng scale để ảnh nét hơn khi chia sẻ
+        scale: 3, 
         backgroundColor: '#fffcf5',
         useCORS: true,
         logging: false,
-        allowTaint: true
+        allowTaint: true,
+        y: -40 // Bù đắp phần âm của logo để chụp trọn vẹn
       });
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
@@ -108,7 +108,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-[#fffcf5] relative overflow-x-hidden">
-      {/* Background decoration */}
       <div className="fixed top-12 left-0 w-full pointer-events-none z-0 opacity-5 select-none overflow-hidden">
         <div className="text-6xl md:text-9xl animate-horse">🐎</div>
       </div>
@@ -170,57 +169,60 @@ const App: React.FC = () => {
           </motion.div>
         ) : (
           <div className="flex flex-col items-center max-w-md w-full px-2">
-            <motion.div 
-              ref={cardRef}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center p-6 md:p-10 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_25px_60px_-15px_rgba(185,28,28,0.4)] border-[8px] border-red-600 w-full text-center relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-4 opacity-5 text-4xl">🏮</div>
-              <div className="absolute bottom-0 left-0 p-4 opacity-5 text-4xl">🏮</div>
+            {/* Wrap card in a container to handle overflow for the top logo and cardRef capture */}
+            <div ref={cardRef} className="w-full pt-10 pb-4">
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center p-6 md:p-8 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_25px_60px_-15px_rgba(185,28,28,0.4)] border-[6px] md:border-[8px] border-red-600 w-full text-center relative"
+              >
+                {/* Decoration items inside, lanterns can overflow slightly without hidden container */}
+                <div className="absolute top-4 right-4 opacity-10 text-2xl">🏮</div>
+                <div className="absolute bottom-4 left-4 opacity-10 text-2xl">🏮</div>
 
-              <div className="absolute -top-10 bg-yellow-400 border-4 border-red-600 p-3 rounded-full shadow-lg">
-                <span className="text-3xl">🐎</span>
-              </div>
-
-              <h2 className="text-2xl md:text-3xl font-festive text-red-600 mb-1 mt-2">Mã Đáo Thành Công!</h2>
-              <p className="text-gray-500 text-[10px] md:text-xs mb-4 font-semibold uppercase tracking-widest">Lộc Xuân Bính Ngọ 2026</p>
-              
-              {/* Banknote Image Display in Result Card */}
-              {wonDenomination && (
-                <div className="relative w-full mb-6 px-4">
-                  <div className="absolute inset-0 bg-black/5 blur-xl rounded-full scale-90"></div>
-                  <motion.img 
-                    initial={{ rotate: -2, y: 10, opacity: 0 }}
-                    animate={{ rotate: 1, y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    src={wonDenomination.imageUrl} 
-                    alt="Tiền lộc"
-                    crossOrigin="anonymous"
-                    className="relative w-full h-auto rounded-lg shadow-2xl border-4 border-white/80 z-10 transform hover:rotate-0 transition-transform duration-500"
-                  />
+                {/* Hanging Logo - Ensure it's not cut off by removing overflow-hidden above */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-yellow-400 border-4 border-red-600 p-3 rounded-full shadow-lg z-20">
+                  <span className="text-3xl block">🐎</span>
                 </div>
-              )}
 
-              <div className="w-full bg-yellow-50 p-4 md:p-6 rounded-[2rem] border-2 border-yellow-200 flex flex-col items-center shadow-inner mb-4 relative group">
-                <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <motion.span 
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  className="text-3xl md:text-5xl font-black text-red-600 drop-shadow-lg z-10"
-                >
-                  {wonAmount ? formatCurrency(wonAmount) : "---"}
-                </motion.span>
-                <div className="mt-2 flex gap-2 z-10">
-                  <Sparkles className="text-yellow-500 w-4 h-4 animate-spin-slow" />
-                  <Sparkles className="text-yellow-500 w-4 h-4 animate-pulse" />
+                <h2 className="text-2xl md:text-3xl font-festive text-red-600 mb-1 mt-6">Mã Đáo Thành Công!</h2>
+                <p className="text-gray-500 text-[10px] md:text-xs mb-6 font-semibold uppercase tracking-widest">Lộc Xuân Bính Ngọ 2026</p>
+                
+                {wonDenomination && (
+                  <div className="relative w-full mb-8 px-6 flex justify-center">
+                    <div className="absolute inset-0 bg-black/5 blur-xl rounded-full scale-75"></div>
+                    <motion.img 
+                      initial={{ rotate: -1, y: 5, opacity: 0 }}
+                      animate={{ rotate: 1, y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      src={wonDenomination.imageUrl} 
+                      alt="Tiền lộc"
+                      crossOrigin="anonymous"
+                      className="relative w-full max-w-[280px] max-h-[120px] md:max-h-[150px] object-contain rounded-lg shadow-xl border-2 border-white/80 z-10 transform"
+                    />
+                  </div>
+                )}
+
+                <div className="w-full bg-yellow-50 p-4 md:p-6 rounded-[2rem] border-2 border-yellow-200 flex flex-col items-center shadow-inner mb-6 relative group">
+                  <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <motion.span 
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    className="text-3xl md:text-5xl font-black text-red-600 drop-shadow-lg z-10"
+                  >
+                    {wonAmount ? formatCurrency(wonAmount) : "---"}
+                  </motion.span>
+                  <div className="mt-2 flex gap-2 z-10">
+                    <Sparkles className="text-yellow-500 w-4 h-4 animate-spin-slow" />
+                    <Sparkles className="text-yellow-500 w-4 h-4 animate-pulse" />
+                  </div>
                 </div>
-              </div>
-              
-              <p className="text-gray-400 text-[8px] md:text-[10px] font-black tracking-widest uppercase italic">🧧 Tấn Tài Tấn Lộc 🧧</p>
-            </motion.div>
+                
+                <p className="text-gray-400 text-[8px] md:text-[10px] font-black tracking-widest uppercase italic mb-2">🧧 Tấn Tài Tấn Lộc 🧧</p>
+              </motion.div>
+            </div>
             
-            <div className="w-full mt-6 flex flex-col items-center gap-4">
+            <div className="w-full mt-4 flex flex-col items-center gap-4">
               <button 
                 onClick={handleShare}
                 disabled={isSharing}
