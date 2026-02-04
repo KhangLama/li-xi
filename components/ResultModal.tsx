@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Denomination } from '../types';
 import { formatCurrency } from '../utils';
 import { TETS_WISHES } from '../constants';
 import Fireworks from './Fireworks';
-import { Trophy, CheckCircle, X } from 'lucide-react';
+import { Trophy, CheckCircle, X, ImageOff, Sparkles } from 'lucide-react';
 
 interface ResultModalProps {
   result: Denomination | null;
@@ -13,10 +13,13 @@ interface ResultModalProps {
 }
 
 const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
+  const [imgError, setImgError] = useState(false);
+  
   if (!result) return null;
 
   const randomWish = TETS_WISHES[Math.floor(Math.random() * TETS_WISHES.length)];
   const isGrandPrize = result.value >= 500000;
+  const isOneMillion = result.value === 1000000;
 
   return (
     <AnimatePresence>
@@ -29,7 +32,6 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
           exit={{ scale: 0.5, opacity: 0, y: 50 }}
           className={`bg-white rounded-[2rem] md:rounded-[3.5rem] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] max-w-sm w-full overflow-hidden border-[6px] md:border-[10px] relative my-auto ${isGrandPrize ? 'border-yellow-400' : 'border-red-600'}`}
         >
-          {/* Close button inside modal for better UX */}
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors z-20 text-white"
@@ -51,20 +53,43 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
           <div className="p-6 md:p-10 flex flex-col items-center text-center">
             <motion.div
               initial={{ rotate: -5, y: 20, opacity: 0 }}
-              animate={{ rotate: 2, y: 0, opacity: 1 }}
+              animate={{ rotate: 0, y: 0, opacity: 1 }}
               transition={{ delay: 0.3, type: 'spring' }}
-              className="relative mb-8 w-full group"
+              className="relative mb-8 w-full min-h-[140px] flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden shadow-inner"
             >
-              <div className="absolute -inset-1 bg-black/10 rounded-xl blur-md group-hover:blur-xl transition-all"></div>
-              <img 
-                src={result.imageUrl} 
-                alt={result.label} 
-                crossOrigin="anonymous"
-                className="relative w-full h-auto rounded-lg shadow-xl border border-white/50 z-10 object-contain max-h-[160px]"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://picsum.photos/400/200?random=' + result.value;
-                }}
-              />
+              {!imgError ? (
+                <div className={`relative w-full h-full flex items-center justify-center p-4 ${isOneMillion ? 'pt-8' : ''}`}>
+                  {isOneMillion ? (
+                    // Hiệu ứng 2 tờ 500k xoè ra
+                    <div className="relative w-full h-32 flex justify-center items-center">
+                      <img 
+                        src={result.imageUrl} 
+                        className="absolute w-4/5 h-auto rounded shadow-lg border border-white/50 z-10 -rotate-12 -translate-x-4 translate-y-2 object-contain"
+                        crossOrigin="anonymous"
+                        onError={() => setImgError(true)}
+                      />
+                      <img 
+                        src={result.imageUrl} 
+                        className="absolute w-4/5 h-auto rounded shadow-xl border border-white/50 z-20 rotate-6 translate-x-4 object-contain"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                  ) : (
+                    <img 
+                      src={result.imageUrl} 
+                      alt={result.label} 
+                      crossOrigin="anonymous"
+                      className="relative w-full h-auto rounded-lg shadow-xl border border-white/50 z-10 object-contain max-h-[160px]"
+                      onError={() => setImgError(true)}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-300 py-10">
+                  <ImageOff className="w-12 h-12 mb-2" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Không tải được ảnh tiền</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 z-20 pointer-events-none rounded-lg"></div>
             </motion.div>
 
@@ -86,19 +111,12 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
             
             <button
               onClick={onClose}
-              className={`w-full font-black py-4 md:py-5 rounded-2xl transition-all shadow-xl active:translate-y-1 active:shadow-none text-lg md:text-xl tracking-widest uppercase ${
-                isGrandPrize 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-red-600 hover:bg-red-700 text-yellow-400'
-              }`}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 md:py-5 rounded-2xl transition-all shadow-xl active:translate-y-1 active:shadow-none text-lg md:text-xl tracking-widest uppercase flex items-center justify-center gap-2"
             >
+              <Sparkles className="w-5 h-5" />
               Nhận Lộc
             </button>
-            <p className="mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] opacity-50">🧧 Xuân Bính Ngọ 2026 🧧</p>
           </div>
-          
-          <div className="absolute bottom-4 left-4 text-3xl opacity-10 select-none">🐎</div>
-          <div className="absolute bottom-4 right-4 text-3xl opacity-10 select-none rotate-12">🧨</div>
         </motion.div>
       </div>
     </AnimatePresence>

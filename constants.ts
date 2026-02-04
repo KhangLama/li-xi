@@ -1,8 +1,8 @@
 
 import { Denomination } from './types';
 
-// Sử dụng proxy images.weserv.nl để đảm bảo hình ảnh có CORS tốt cho việc chụp ảnh màn hình
-const proxyImg = (url: string) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&default=${encodeURIComponent(url)}`;
+// Sử dụng proxy wsrv.nl để xử lý CORS, cho phép html2canvas chụp ảnh và tránh bị chặn hotlink
+const proxyImg = (url: string) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800&fit=contain&output=jpg`;
 
 export const DENOMINATIONS: Denomination[] = [
   {
@@ -52,7 +52,8 @@ export const DENOMINATIONS: Denomination[] = [
     label: '1.000.000 VNĐ',
     color: 'bg-amber-50 border-amber-400 text-amber-900 ring-4 ring-yellow-400',
     weight: 1,
-    imageUrl: 'https://images.weserv.nl/?url=https://img.freepik.com/premium-photo/stack-gold-ingots-money-background-generative-ai_1031313-1466.jpg'
+    // Cho 1 triệu, ta vẫn dùng ảnh 500k nhưng trong code UI sẽ vẽ 2 tờ
+    imageUrl: proxyImg('https://www.anhnghethuatdulich.com/wp-content/uploads/2025/09/anh-tien-500-nghin.jpg')
   }
 ];
 
