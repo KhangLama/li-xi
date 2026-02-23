@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Share2, Trophy, Loader2, History, RotateCcw, Calendar } from 'lucide-react';
+import { Sparkles, Share2, Trophy, Loader2, History, RotateCcw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { Denomination, LuckHistory } from './types.ts';
 import { generateLixiDeck, formatCurrency } from './utils.ts';
@@ -19,6 +19,7 @@ const App = () => {
   const [wonAmount, setWonAmount] = useState<number | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [history, setHistory] = useState<LuckHistory[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -224,41 +225,64 @@ const App = () => {
             
             {/* Lịch sử nhận lộc Section */}
             {history.length > 0 && (
-              <div className="w-full max-w-2xl bg-white/60 backdrop-blur-sm rounded-3xl p-6 md:p-8 border-2 border-red-100 shadow-sm mb-12">
-                <div className="flex items-center justify-between mb-6 border-b border-red-100 pb-4">
-                  <div className="flex items-center gap-2 text-red-700 font-black uppercase tracking-wider text-sm md:text-base">
+              <div className="w-full max-w-2xl mb-12">
+                <button 
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-2xl p-4 border-2 border-red-100 shadow-sm hover:bg-white/80 transition-all"
+                >
+                  <div className="flex items-center gap-2 text-red-700 font-black uppercase tracking-wider text-sm">
                     <History className="w-5 h-5" />
-                    Lịch sử nhận lộc
+                    Lịch sử nhận lộc ({history.length})
                   </div>
-                  <button 
-                    onClick={clearHistory}
-                    className="text-[10px] text-gray-400 font-bold hover:text-red-500 transition-colors uppercase"
-                  >
-                    Xóa tất cả
-                  </button>
-                </div>
-                
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {history.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-red-50/50 group hover:border-red-200 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-600">
-                          <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-red-600 font-black text-lg">{formatCurrency(item.amount)}</span>
-                          <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(item.timestamp).toLocaleTimeString('vi-VN')} - {new Date(item.timestamp).toLocaleDateString('vi-VN')}
+                  {showHistory ? <ChevronUp className="w-5 h-5 text-red-400" /> : <ChevronDown className="w-5 h-5 text-red-400" />}
+                </button>
+
+                <AnimatePresence>
+                  {showHistory && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 bg-white/60 backdrop-blur-sm rounded-3xl p-6 md:p-8 border-2 border-red-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-6 border-b border-red-100 pb-4">
+                          <div className="text-red-700 font-black uppercase tracking-wider text-xs">
+                            Danh sách quẻ đã gieo
                           </div>
+                          <button 
+                            onClick={clearHistory}
+                            className="text-[10px] text-gray-400 font-bold hover:text-red-500 transition-colors uppercase"
+                          >
+                            Xóa tất cả
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                          {history.map((item) => (
+                            <div key={item.id} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-red-50/50 group hover:border-red-200 transition-all">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-600">
+                                  <Sparkles className="w-5 h-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-red-600 font-black text-lg">{formatCurrency(item.amount)}</span>
+                                  <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(item.timestamp).toLocaleTimeString('vi-VN')} - {new Date(item.timestamp).toLocaleDateString('vi-VN')}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-red-300">
+                                🐎
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-red-300">
-                        🐎
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
