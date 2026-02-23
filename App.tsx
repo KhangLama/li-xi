@@ -101,9 +101,14 @@ const App = () => {
   };
 
   const clearHistory = () => {
-    if (window.confirm("Bạn có chắc muốn xóa lịch sử nhận lộc không?")) {
+    if (window.confirm("Bạn có chắc muốn xóa lịch sử nhận lộc và làm mới hủ quẻ không?")) {
       setHistory([]);
       localStorage.removeItem('lixi_2026_history');
+      
+      const newDeck = generateLixiDeck();
+      setDeck(newDeck);
+      localStorage.setItem('lixi_2026_deck', JSON.stringify(newDeck));
+      handleReset();
     }
   };
 
