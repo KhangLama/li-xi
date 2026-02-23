@@ -5,14 +5,16 @@ import { Sparkles, Share2, Trophy, Loader2, History, RotateCcw, Calendar } from 
 import html2canvas from 'html2canvas';
 import { Denomination, LuckHistory } from './types.ts';
 import { generateLixiDeck, formatCurrency } from './utils.ts';
-import { DENOMINATIONS } from './constants.ts';
+import { DENOMINATIONS, TETS_WISHES } from './constants.ts';
 import Envelope from './components/Envelope.tsx';
+import FortuneContainer from './components/FortuneContainer.tsx';
 import ResultModal from './components/ResultModal.tsx';
 
 const App = () => {
   const [deck, setDeck] = useState<Denomination[]>([]);
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [currentResult, setCurrentResult] = useState<Denomination | null>(null);
+  const [currentWish, setCurrentWish] = useState<string>("");
   const [showResultCard, setShowResultCard] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
   const [isSharing, setIsSharing] = useState(false);
@@ -22,17 +24,37 @@ const App = () => {
 
   // Khởi tạo deck và lấy lịch sử từ localStorage
   useEffect(() => {
-    setDeck(generateLixiDeck());
     const savedHistory = JSON.parse(localStorage.getItem('lixi_2026_history') || '[]');
     setHistory(savedHistory);
+
+    const savedDeck = JSON.parse(localStorage.getItem('lixi_2026_deck') || 'null');
+    if (savedDeck && savedDeck.length > 0) {
+      setDeck(savedDeck);
+    } else {
+      const newDeck = generateLixiDeck();
+      setDeck(newDeck);
+      localStorage.setItem('lixi_2026_deck', JSON.stringify(newDeck));
+    }
   }, []);
 
   const wonDenomination = wonAmount ? DENOMINATIONS.find(d => d.value === wonAmount) : null;
 
-  const handleOpenEnvelope = useCallback((index: number) => {
-    if (openedId !== null) return;
+  const handleShakeComplete = useCallback(() => {
+    if (openedId !== null || deck.length === 0) return;
 
+    // Lấy một quẻ ngẫu nhiên từ deck (hoặc lấy cái đầu tiên vì deck đã được xáo trộn)
+    const index = 0; 
     const result = deck[index];
+    
+    // Chọn một câu chúc ngẫu nhiên
+    const randomWish = TETS_WISHES[Math.floor(Math.random() * TETS_WISHES.length)];
+    setCurrentWish(randomWish);
+
+    // Cập nhật deck mới (xóa quẻ vừa bốc)
+    const newDeck = deck.filter((_, i) => i !== index);
+    setDeck(newDeck);
+    localStorage.setItem('lixi_2026_deck', JSON.stringify(newDeck));
+
     setOpenedId(index);
     setCurrentResult(result);
     setWonAmount(result.value);
@@ -44,7 +66,7 @@ const App = () => {
       timestamp: Date.now()
     };
     
-    const updatedHistory = [newHistoryItem, ...history].slice(0, 20); 
+    const updatedHistory = [newHistoryItem, ...history].slice(0, 50); // Tăng giới hạn lịch sử
     setHistory(updatedHistory);
     localStorage.setItem('lixi_2026_history', JSON.stringify(updatedHistory));
 
@@ -55,11 +77,27 @@ const App = () => {
   }, [openedId, deck, history]);
 
   const handleReset = () => {
-    setDeck(generateLixiDeck());
     setOpenedId(null);
     setCurrentResult(null);
+    setCurrentWish("");
     setShowResultCard(false);
     setWonAmount(null);
+    
+    // Nếu hết quẻ thì tự động hồi phục pool mới
+    if (deck.length === 0) {
+      const newDeck = generateLixiDeck();
+      setDeck(newDeck);
+      localStorage.setItem('lixi_2026_deck', JSON.stringify(newDeck));
+    }
+  };
+
+  const resetPool = () => {
+    if (window.confirm("Bạn có muốn làm mới toàn bộ hủ quẻ (36 quẻ mới)?")) {
+      const newDeck = generateLixiDeck();
+      setDeck(newDeck);
+      localStorage.setItem('lixi_2026_deck', JSON.stringify(newDeck));
+      handleReset();
+    }
   };
 
   const clearHistory = () => {
@@ -89,8 +127,8 @@ const App = () => {
       const file = new File([blob], `lixi-2026-${wonAmount}.png`, { type: 'image/png' });
       const shareData = {
         files: [file],
-        title: 'Lì Xì Bính Ngọ 2026',
-        text: `🧧 Tớ vừa bốc được ${formatCurrency(wonAmount || 0)} lộc may mắn năm Bính Ngọ 2026! Mã Đáo Thành Công!`,
+        title: 'Gieo Quẻ Bính Ngọ 2026',
+        text: `🧧 Tớ vừa gieo được quẻ ${formatCurrency(wonAmount || 0)} lộc may mắn năm Bính Ngọ 2026! Mã Đáo Thành Công!`,
       };
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -139,7 +177,7 @@ const App = () => {
             animate={{ y: 0, opacity: 1 }}
             className="text-3xl sm:text-4xl md:text-6xl font-festive mb-2 drop-shadow-[0_4px_4px_rgba(0,0,0,0.3)]"
           >
-            Lì Xì Bính Ngọ
+            Gieo Quẻ Bính Ngọ
           </motion.h1>
           <motion.div 
             initial={{ opacity: 0 }}
@@ -159,16 +197,24 @@ const App = () => {
             animate={{ opacity: 1 }}
             className="flex flex-col items-center w-full max-w-4xl"
           >
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-10 place-items-center mb-16">
-              {deck.map((_, index) => (
-                <Envelope 
-                  key={`${index}-${openedId}`} 
-                  id={index} 
-                  onClick={() => handleOpenEnvelope(index)} 
-                  isOpened={openedId === index}
-                  disabled={openedId !== null}
-                />
-              ))}
+            <div className="mb-16">
+              <FortuneContainer 
+                onShakeComplete={handleShakeComplete}
+                disabled={openedId !== null || deck.length === 0}
+              />
+              <div className="mt-4 text-center">
+                <span className="bg-red-100 text-red-700 px-4 py-1 rounded-full text-xs font-bold border border-red-200">
+                  Còn lại: {deck.length} quẻ trong hủ
+                </span>
+                {deck.length === 0 && (
+                  <button 
+                    onClick={resetPool}
+                    className="ml-2 text-xs text-blue-600 font-bold underline"
+                  >
+                    Làm mới hủ
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* Lịch sử nhận lộc Section */}
@@ -230,7 +276,7 @@ const App = () => {
                   <span className="text-3xl block">🐎</span>
                 </div>
 
-                <h2 className="text-2xl md:text-3xl font-festive text-red-600 mb-1 mt-6">Mã Đáo Thành Công!</h2>
+                <h2 className="text-2xl md:text-3xl font-festive text-red-600 mb-1 mt-6">Quẻ Lộc Đại Cát!</h2>
                 <p className="text-gray-500 text-[10px] md:text-xs mb-6 font-semibold uppercase tracking-widest">Lộc Xuân Bính Ngọ 2026</p>
                 
                 {wonDenomination && (
@@ -299,7 +345,7 @@ const App = () => {
                 className="w-full flex items-center justify-center gap-3 bg-yellow-400 hover:bg-yellow-500 text-red-800 font-black py-4 rounded-2xl transition-all shadow-[0_6px_0_0_#ca8a04] active:translate-y-1 active:shadow-none text-lg uppercase tracking-wider group"
               >
                 <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                Bốc Tiếp Lộc Mới
+                Gieo Quẻ Tiếp
               </button>
 
               <p className="text-gray-400 text-[10px] font-bold italic text-center px-4 mt-2">
@@ -310,10 +356,14 @@ const App = () => {
         )}
       </main>
 
-      <ResultModal result={currentResult} onClose={() => setCurrentResult(null)} />
+      <ResultModal 
+        result={currentResult} 
+        wish={currentWish}
+        onClose={() => setCurrentResult(null)} 
+      />
 
       <footer className="fixed bottom-0 left-0 w-full bg-red-700/95 backdrop-blur-md border-t-4 border-yellow-500 py-3 text-center text-yellow-400 font-black text-xs md:text-sm z-40 shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
-        🧧 XUÂN BÍNH NGỌ 2026 - MÃ ĐÁO THÀNH CÔNG 🧧
+        🧧 GIEO QUẺ BÍNH NGỌ 2026 - MÃ ĐÁO THÀNH CÔNG 🧧
       </footer>
     </div>
   );

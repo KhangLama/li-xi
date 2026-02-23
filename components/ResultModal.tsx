@@ -1,23 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Denomination } from '../types';
 import { formatCurrency } from '../utils';
-import { TETS_WISHES } from '../constants';
 import Fireworks from './Fireworks';
 import { Trophy, CheckCircle, X, ImageOff, Sparkles } from 'lucide-react';
 
 interface ResultModalProps {
   result: Denomination | null;
+  wish: string;
   onClose: () => void;
 }
 
-const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
+const ResultModal: React.FC<ResultModalProps> = ({ result, wish, onClose }) => {
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (result) {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+      audio.play().catch(e => console.log("Success audio play failed:", e));
+    }
+  }, [result]);
   
   if (!result) return null;
 
-  const randomWish = TETS_WISHES[Math.floor(Math.random() * TETS_WISHES.length)];
   const isGrandPrize = result.value >= 500000;
   const isOneMillion = result.value === 1000000;
 
@@ -46,7 +52,7 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
               <CheckCircle className="w-12 h-12 md:w-16 md:h-16 text-yellow-400 mx-auto mb-2 animate-pulse" />
             )}
             <h2 className={`${isGrandPrize ? 'text-red-700' : 'text-yellow-400'} text-3xl md:text-4xl font-festive leading-tight`}>
-              {isGrandPrize ? 'Đại Cát Đại Lợi!' : 'Lộc Xuân Đã Đến!'}
+              {isGrandPrize ? 'Quẻ Thượng Cát!' : 'Quẻ Lộc Đã Đến!'}
             </h2>
           </div>
           
@@ -106,7 +112,7 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
             </motion.div>
             
             <p className="text-gray-700 italic font-medium text-base md:text-lg leading-relaxed mb-8 px-4 border-l-2 border-red-200">
-              "{randomWish}"
+              "{wish}"
             </p>
             
             <button
@@ -114,7 +120,7 @@ const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => {
               className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 md:py-5 rounded-2xl transition-all shadow-xl active:translate-y-1 active:shadow-none text-lg md:text-xl tracking-widest uppercase flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Nhận Lộc
+              Tạ Lễ Nhận Lộc
             </button>
           </div>
         </motion.div>
